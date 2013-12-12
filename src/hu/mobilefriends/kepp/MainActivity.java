@@ -1,6 +1,9 @@
 package hu.mobilefriends.kepp;
 
+import java.util.Random;
+
 import android.app.Activity;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -8,16 +11,15 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.widget.ImageView;
 
 public class MainActivity extends Activity {
-    
-    
-   private static int RESULT_LOAD_IMAGE = 1;
-    
 
+	private int imgCount;
+	
    @Override
    public void onCreate(Bundle savedInstanceState) {
        super.onCreate(savedInstanceState);
@@ -35,16 +37,18 @@ public class MainActivity extends Activity {
        Uri images = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
 
        // Make the query.
-       final Cursor cur = managedQuery(images,
+       final Cursor cur = this.getContentResolver().query(images,
                projection, // Which columns to return
                "",         // Which rows to return (all rows)
                null,       // Selection arguments (none)
                ""          // Ordering
                );
+       
+       imgCount = cur.getCount();
 
        if (cur.moveToFirst()) {
     	   
-    	   getImg(cur);
+    	   getRandomImg(cur);
     	   
        }
        
@@ -52,24 +56,46 @@ public class MainActivity extends Activity {
        imageView.setOnClickListener(new View.OnClickListener() {
            
            @Override
-           public void onClick(View arg0) {                
-        	   cur.moveToNext();
-        	   getImg(cur);
+           public void onClick(View arg0) {                        	          	  
+        	   
+        	   getRandomImg(cur);
            }
        });
    }
-    
-    
-   private void getImg(Cursor cur) {
-	   String bucket;
-       String date;
-       int bucketColumn = cur.getColumnIndex(
-           MediaStore.Images.Media.BUCKET_DISPLAY_NAME);
+   
+   @Override
+   public void onBackPressed() {
+   }    
+   
+   public void onWindowFocusChanged(boolean hasFocus) {
+	    super.onWindowFocusChanged(hasFocus);
 
-       int dateColumn = cur.getColumnIndex(
-           MediaStore.Images.Media.DATE_TAKEN);
-       
-       int columnIndex = cur.getColumnIndex(MediaStore.Images.Media.DATA);
+
+	    Log.d("Focus debug", "Focus changed !");
+
+	if(!hasFocus) {
+	    Log.d("Focus debug", "Lost focus !");
+
+	    Intent closeDialog = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+	    sendBroadcast(closeDialog);
+	}
+	}
+    
+   private void getRandomImg(Cursor cur) 
+   {
+	   Random r = new Random();
+	   int stepCount = r.nextInt(imgCount-1) + 1;
+	   
+	   for (int i=1; i<=stepCount; i++)
+	   {
+		   cur.moveToNext();
+		   if (cur.isAfterLast())
+		   {
+			   cur.moveToFirst();
+		   }
+	   } 
+	   
+	   int columnIndex = cur.getColumnIndex(MediaStore.Images.Media.DATA);
        String picPath = cur.getString(columnIndex);
        
        ImageView imageView = (ImageView) findViewById(R.id.imgView);
